@@ -1,0 +1,32 @@
+{
+  "name": "reservax-web-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": ".src/index.js",
+  "browser": {
+    "[module-name]": false
+  },
+  "scripts": {
+    "serve": "webpack-dev-server --mode development --config webpack.dev.js",
+    "build": "webpack --mode production --config webpack.prod.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lume-Studios/reservax-web-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Lume-Studios/reservax-web-app/issues"
+  },
+  "homepage": "https://github.com/Lume-Studios/reservax-web-app#readme",
+  "devDependencies": {
+    "webpack": "^5.70.0",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^4.7.4"
+  },
+  "dependencies": {
+    "axios": "^0.26.1"
+  }
+}

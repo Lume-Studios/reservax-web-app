@@ -1,4 +1,5 @@
 import ABI from './contract/ABI.json'
+import axios from 'axios'
 
 const connectButton = document.querySelector('.is--connect-wallet')
 const connectedTo = document.querySelector('.connected-to')
@@ -18,24 +19,16 @@ const popUpBgWrapper = document.querySelector('.pop-up__bg-wrapper')
 const popUpWrapper = document.querySelector('.pop-up__wrapper')
 const knowMoreButtons = Array.from(document.getElementsByClassName('know_more-button'))
 const closePopUp = document.querySelector('.pop-up__close-icon')
+const errorWrapper = document.querySelector('.error-wrapper')
+
 
 const web3 = new Web3(Web3.givenProvider);
 
 const contract = new web3.eth.Contract(ABI, process.env.CONTRACT_ADDRESS);
 
 const verifyWallet = async (address, projectId, i) => {
-    try {
-        const response = await axios.get(process.env.SERVER + 'users/verify', { params: { address, projectId } });
 
-        return response;
-    } catch (error) {
-        alert('erro na verify')
-        console.log('not whitelisted')
-        loadingWrapper[i].classList.add('is-hidden')
-        toolTipWrapper[i].classList.remove('is-hidden')
-        mintButtons[i].classList.remove('is-hidden')
-    }
-
+    return await axios.get(process.env.SERVER + 'users/verify', { params: { address, projectId } });
 }
 
 const connectWallet = async function () {
@@ -89,78 +82,101 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
     mintButtons[i].classList.add('is-hidden')
     loadingWrapper[i].classList.remove('is-hidden')
     toolTipWrapper[i].classList.add('is-hidden')
-    try {
-        const accounts = await window.ethereum.request({
-            method: 'eth_accounts',
-        });
+
+    window.ethereum.request({
+        method: 'eth_accounts',
+    }).then(accounts => {
+        console.log(accounts)
+        console.log(contract)
         if (accounts.length > 0) {
-            if (!IS_PRE_SALE) {
+            if (!process.env.IS_PRE_SALE) {
+                console.log('pq nao')
+                console.log('pq nao')
+
                 let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                contract.methods.publicPurchase(quantity[i].innerText, i).send({
+                    from: accounts[0],
+                    to: process.env.CONTRACT_ADDRESS,
+                    value: String(totalCost),
+                }).then(mint => {
+                    console.log('pq nao')
 
-                if (accounts.length > 0) {
-                    contract.methods.publicPurchase(quantity[i].innerText, i).send({
-                        from: accounts[0],
-                        to: CONTRACT_ADDRESS,
-                        value: String(totalCost),
-                    }).then(mint => {
-                        toolTipWrapper[i].classList.add('is-hidden')
-                        loadingWrapper[i].classList.add('is-hidden')
-                        openseaLink[i].classList.remove('is-hidden')
-                    }).catch(error => {
-                        alert(Object.entries(error))
-                        mintButtons[i].classList.remove('is-hidden')
-                        loadingWrapper[i].classList.add('is-hidden')
-                        toolTipWrapper[i].classList.remove('is-hidden')
-                        toolTipText[i].classList.remove('is-active')
-                        toolTipText[i].classList.add('is-hidden')
+                    toolTipWrapper[i].classList.add('is-hidden')
+                    loadingWrapper[i].classList.add('is-hidden')
+                    openseaLink[i].classList.remove('is-hidden')
+                }).catch(error => {
+                    alert(Object.entries(error))
+                    console.log('pq nao')
+                    Toastify.error({
+                        text: 'this is an error message',
+                        duration: 3000
                     })
-                }
+                    mintButtons[i].classList.remove('is-hidden')
+                    loadingWrapper[i].classList.add('is-hidden')
+                    toolTipWrapper[i].classList.remove('is-hidden')
+                    toolTipText[i].classList.remove('is-active')
+                    toolTipText[i].classList.add('is-hidden')
+                })
+
             } else {
-                const accounts = await window.ethereum.request({
+                window.ethereum.request({
                     method: 'eth_accounts',
-                });
+                }).then(accounts => {
+                    verifyWallet(accounts[0], process.env.PROJECT_ID, i).then(response => {
+                        if (response) {
+                            const { v, r, s } = response.data
 
-                let totalCost = Number(COST) * parseInt(quantity[i].innerText)
+                            let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                            contract.methods.earlyPurchase(quantity[i].innerText, i, v, r, s).send({
+                                from: accounts[0],
+                                to: process.env.CONTRACT_ADDRESS,
+                                value: String(totalCost),
+                            }).then(mint => {
+                                loadingWrapper[i].classList.add('is-hidden')
+                                openseaLink[i].classList.remove('is-hidden')
+                            }).catch(error => {
+                                show();
+                                mintButtons[i].classList.remove('is-hidden')
+                                loadingWrapper[i].classList.add('is-hidden')
+                                toolTipWrapper[i].classList.remove('is-hidden')
+                                toolTipText[i].classList.remove('is-active')
+                                toolTipText[i].classList.add('is-hidden')
 
-                const response = await verifyWallet(accounts[0], PROJECT_ID, i)
-                if (response) {
-                    const { v, r, s } = response.data
-
-                    contract.methods.earlyPurchase(quantity[i].innerText, i, v, r, s).send({
-                        from: accounts[0],
-                        to: CONTRACT_ADDRESS,
-                        value: String(totalCost),
-                    }).then(mint => {
-                        alert(Object.entries(error))
-                        loadingWrapper[i].classList.add('is-hidden')
-                        openseaLink[i].classList.remove('is-hidden')
+                            })
+                        }
                     }).catch(error => {
-                        alert('erro na funcao  pre salemint')
+                        console.log('aqui wl')
+                        errorWrapper.classList.remove('is-hidden')
                         mintButtons[i].classList.remove('is-hidden')
                         loadingWrapper[i].classList.add('is-hidden')
                         toolTipWrapper[i].classList.remove('is-hidden')
                         toolTipText[i].classList.remove('is-active')
                         toolTipText[i].classList.add('is-hidden')
                     })
-                }
+                })
             }
         } else {
+            console.log('n ta caindo aqui')
             toolTipWrapper[i].classList.remove('is-hidden')
             loadingWrapper[i].classList.add('is-hidden')
             mintButtons[i].classList.remove('is-hidden')
             toolTipText[i].classList.add('is-active')
         }
-    } catch (error) {
+    }).catch(error => {
+        show()
+        console.log('aqui')
         toolTipWrapper[i].classList.remove('is-hidden')
         loadingWrapper[i].classList.add('is-hidden')
         mintButtons[i].classList.remove('is-hidden')
         toolTipText[i].classList.add('is-active')
-    }
+    })
+
+
 })
 
 connectButton.addEventListener('click', connectWallet);
 
-closePopUpEvent = async () => {
+const closePopUpEvent = () => {
     popUpBgWrapper.classList.add('is-hidden')
     popUpWrapper.classList.add('is-hidden')
 }
@@ -204,3 +220,4 @@ videos.forEach((video, i) => {
         }, 400 + i * 400);
     })
 })
+

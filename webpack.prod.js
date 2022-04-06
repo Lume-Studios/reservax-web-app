@@ -13,7 +13,8 @@ module.exports = merge(common, {
                         SERVER: JSON.stringify('https://reservax.55unity.com/'),
                         COST: JSON.stringify('150000000000000000'),
                         IS_PRE_SALE: true,
-                        MAX_SUPPLY: JSON.stringify('81')
+                        MAX_SUPPLY: JSON.stringify('81'),
+                        MAX_MINTS_PER_USER: JSON.stringify('10')
                   }
             })
       ]

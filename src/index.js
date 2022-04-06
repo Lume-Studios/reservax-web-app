@@ -20,6 +20,7 @@ const popUpWrapper = document.querySelector('.pop-up__wrapper')
 const knowMoreButtons = Array.from(document.getElementsByClassName('know_more-button'))
 const closePopUp = document.querySelector('.pop-up__close-icon')
 const errorWrapper = document.querySelector('.error-wrapper')
+const errorMessage = document.querySelector('.error-message')
 
 
 const web3 = new Web3(Web3.givenProvider);
@@ -31,37 +32,47 @@ const verifyWallet = async (address, projectId, i) => {
     return await axios.get(process.env.SERVER + 'users/verify', { params: { address, projectId } });
 }
 
+const setError = (message) => {
+    errorMessage.innerText = message
+    errorWrapper.classList.remove('is-hidden')
+    errorWrapper.classList.add('active-error')
+}
+
 const connectWallet = async function () {
-    const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-    });
+    try {
+        const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+        });
 
-    if (accounts.length > 0) {
-        connectedTo.innerText = 'Carteira: ' + accounts[0].substring(0, 5) + '...' + accounts[0].substring(accounts[0].length - 4, accounts[0].length)
-        carteiraWrapper.classList.remove('is-hidden')
-        connectButton.classList.add('is-hidden')
+        if (accounts.length > 0) {
+            connectedTo.innerText = 'Carteira: ' + accounts[0].substring(0, 5) + '...' + accounts[0].substring(accounts[0].length - 4, accounts[0].length)
+            carteiraWrapper.classList.remove('is-hidden')
+            connectButton.classList.add('is-hidden')
 
-        supplyTotal.forEach((text, i) => {
-            contract.methods.totalSupply(i).call().then((total) => {
-                supplyTotal[i].innerText = total;
-                minusButtons[i].classList.remove('is-disabled')
-                if (+supplyTotal[i].innerText < process.env.MAX_SUPPLY) {
-                    sumButtons[i].classList.remove('is-disabled')
-                    mintButtons[i].classList.remove('is-disabled')
-                }
+            supplyTotal.forEach((text, i) => {
+                contract.methods.totalSupply(i).call().then((total) => {
+                    supplyTotal[i].innerText = total;
+                    minusButtons[i].classList.remove('is-disabled')
+                    if (+supplyTotal[i].innerText < process.env.MAX_SUPPLY) {
+                        sumButtons[i].classList.remove('is-disabled')
+                        mintButtons[i].classList.remove('is-disabled')
+                    }
+                })
             })
-        })
 
-        supplyMax.forEach((text, i) => {
-            contract.methods.maxSupplyEach(i).call().then((max) => {
-                supplyMax[i].innerText = '/ ' + max;
+            supplyMax.forEach((text, i) => {
+                contract.methods.maxSupplyEach(i).call().then((max) => {
+                    supplyMax[i].innerText = '/ ' + max;
+                })
             })
-        })
+        }
+    } catch (err) {
+        setError('Houve um erro inesperado!')
     }
 }
 
 sumButtons.forEach((button, i) => button.onclick = () => {
-    if (+quantity[i].innerText < MAX_MINTS_PER_USER) {
+    if (+quantity[i].innerText < process.env.MAX_MINTS_PER_USER) {
         quantity[i].innerText++;
     }
 })
@@ -82,7 +93,8 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
     mintButtons[i].classList.add('is-hidden')
     loadingWrapper[i].classList.remove('is-hidden')
     toolTipWrapper[i].classList.add('is-hidden')
-
+    errorWrapper.classList.remove('active-error')
+    errorWrapper.classList.add('is-hidden')
     window.ethereum.request({
         method: 'eth_accounts',
     }).then(accounts => {
@@ -90,8 +102,6 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
         console.log(contract)
         if (accounts.length > 0) {
             if (!process.env.IS_PRE_SALE) {
-                console.log('pq nao')
-                console.log('pq nao')
 
                 let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
                 contract.methods.publicPurchase(quantity[i].innerText, i).send({
@@ -99,18 +109,11 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
                     to: process.env.CONTRACT_ADDRESS,
                     value: String(totalCost),
                 }).then(mint => {
-                    console.log('pq nao')
-
                     toolTipWrapper[i].classList.add('is-hidden')
                     loadingWrapper[i].classList.add('is-hidden')
                     openseaLink[i].classList.remove('is-hidden')
                 }).catch(error => {
-                    alert(Object.entries(error))
-                    console.log('pq nao')
-                    Toastify.error({
-                        text: 'this is an error message',
-                        duration: 3000
-                    })
+                    setError('Houve um erro inesperado!')
                     mintButtons[i].classList.remove('is-hidden')
                     loadingWrapper[i].classList.add('is-hidden')
                     toolTipWrapper[i].classList.remove('is-hidden')
@@ -135,18 +138,18 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
                                 loadingWrapper[i].classList.add('is-hidden')
                                 openseaLink[i].classList.remove('is-hidden')
                             }).catch(error => {
-                                show();
+                                setError('Houve um erro inesperado!')
+                                errorWrapper.classList.remove('is-hidden')
+                                errorWrapper.classList.add('active-error')
                                 mintButtons[i].classList.remove('is-hidden')
                                 loadingWrapper[i].classList.add('is-hidden')
                                 toolTipWrapper[i].classList.remove('is-hidden')
                                 toolTipText[i].classList.remove('is-active')
                                 toolTipText[i].classList.add('is-hidden')
-
                             })
                         }
                     }).catch(error => {
-                        console.log('aqui wl')
-                        errorWrapper.classList.remove('is-hidden')
+                        setError('Verificamos que você não tá na Pre-sale!')
                         mintButtons[i].classList.remove('is-hidden')
                         loadingWrapper[i].classList.add('is-hidden')
                         toolTipWrapper[i].classList.remove('is-hidden')
@@ -156,14 +159,13 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
                 })
             }
         } else {
-            console.log('n ta caindo aqui')
             toolTipWrapper[i].classList.remove('is-hidden')
             loadingWrapper[i].classList.add('is-hidden')
             mintButtons[i].classList.remove('is-hidden')
             toolTipText[i].classList.add('is-active')
         }
     }).catch(error => {
-        show()
+        setError('Houve um erro inesperado!')
         console.log('aqui')
         toolTipWrapper[i].classList.remove('is-hidden')
         loadingWrapper[i].classList.add('is-hidden')

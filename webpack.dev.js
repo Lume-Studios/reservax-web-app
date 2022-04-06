@@ -22,9 +22,9 @@ module.exports = merge(common, {
         PROJECT_ID: JSON.stringify('62055cd53fb9db48300256a1'),
         SERVER: JSON.stringify('http://localhost:3001/'),
         COST: JSON.stringify('10000000000000000'),
-        IS_PRE_SALE: true,
+        IS_PRE_SALE: false,
         MAX_SUPPLY: JSON.stringify('81'),
-        MAX_MINTS_PER_USER: JSON.stringify('11')
+        MAX_MINTS_PER_USER: JSON.stringify('6')
       }
     })
   ]

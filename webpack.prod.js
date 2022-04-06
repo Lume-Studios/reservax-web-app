@@ -14,7 +14,7 @@ module.exports = merge(common, {
                         COST: JSON.stringify('125000000000000000'),
                         IS_PRE_SALE: true,
                         MAX_SUPPLY: JSON.stringify('81'),
-                        MAX_MINTS_PER_USER: JSON.stringify('10')
+                        MAX_MINTS_PER_USER: JSON.stringify('6')
                   }
             })
       ]

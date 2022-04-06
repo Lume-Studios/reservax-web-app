@@ -38,6 +38,20 @@ const setError = (message) => {
     errorWrapper.classList.add('active-error')
 }
 
+const setLoadingForMint = (i) => {
+    loadingWrapper[i].classList.remove('is-hidden')
+    toolTipWrapper[i].classList.add('is-hidden')
+    errorWrapper.classList.remove('active-error')
+    errorWrapper.classList.add('is-hidden')
+}
+
+const prepareError = (i) => {
+    loadingWrapper[i].classList.add('is-hidden')
+    toolTipWrapper[i].classList.remove('is-hidden')
+    toolTipText[i].classList.remove('is-active')
+    toolTipText[i].classList.add('is-hidden')
+}
+
 const connectWallet = async function () {
     try {
         const accounts = await window.ethereum.request({
@@ -88,75 +102,80 @@ knowMoreButtons.forEach((button) => button.onclick = () => {
     popUpWrapper.classList.remove('is-hidden')
 })
 
+const hasBalance = async (account) => {
+    try {
+        return await web3.eth.getBalance(account)
+    } catch (err) {
+        console.log(err)
+    }
+}
+
 mintButtons.forEach((button, i) => button.onclick = async (e) => {
     e.preventDefault();
-    mintButtons[i].classList.add('is-hidden')
-    loadingWrapper[i].classList.remove('is-hidden')
-    toolTipWrapper[i].classList.add('is-hidden')
-    errorWrapper.classList.remove('active-error')
-    errorWrapper.classList.add('is-hidden')
+    setLoadingForMint(i);
     window.ethereum.request({
         method: 'eth_accounts',
     }).then(accounts => {
-        console.log(accounts)
-        console.log(contract)
         if (accounts.length > 0) {
-            if (!process.env.IS_PRE_SALE) {
+            const balance = hasBalance(accounts[0])
+            if (Number(balance) > 0) {
+                if (!process.env.IS_PRE_SALE) {
 
-                let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
-                contract.methods.publicPurchase(quantity[i].innerText, i).send({
-                    from: accounts[0],
-                    to: process.env.CONTRACT_ADDRESS,
-                    value: String(totalCost),
-                }).then(mint => {
-                    toolTipWrapper[i].classList.add('is-hidden')
-                    loadingWrapper[i].classList.add('is-hidden')
-                    openseaLink[i].classList.remove('is-hidden')
-                }).catch(error => {
-                    setError('Houve um erro inesperado!')
-                    mintButtons[i].classList.remove('is-hidden')
-                    loadingWrapper[i].classList.add('is-hidden')
-                    toolTipWrapper[i].classList.remove('is-hidden')
-                    toolTipText[i].classList.remove('is-active')
-                    toolTipText[i].classList.add('is-hidden')
-                })
-
-            } else {
-                window.ethereum.request({
-                    method: 'eth_accounts',
-                }).then(accounts => {
-                    verifyWallet(accounts[0], process.env.PROJECT_ID, i).then(response => {
-                        if (response) {
-                            const { v, r, s } = response.data
-
-                            let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
-                            contract.methods.earlyPurchase(quantity[i].innerText, i, v, r, s).send({
-                                from: accounts[0],
-                                to: process.env.CONTRACT_ADDRESS,
-                                value: String(totalCost),
-                            }).then(mint => {
-                                loadingWrapper[i].classList.add('is-hidden')
-                                openseaLink[i].classList.remove('is-hidden')
-                            }).catch(error => {
-                                setError('Houve um erro inesperado!')
-                                errorWrapper.classList.remove('is-hidden')
-                                errorWrapper.classList.add('active-error')
-                                mintButtons[i].classList.remove('is-hidden')
-                                loadingWrapper[i].classList.add('is-hidden')
-                                toolTipWrapper[i].classList.remove('is-hidden')
-                                toolTipText[i].classList.remove('is-active')
-                                toolTipText[i].classList.add('is-hidden')
-                            })
-                        }
-                    }).catch(error => {
-                        setError('Ei, você não tá na Pre-sale')
-                        mintButtons[i].classList.remove('is-hidden')
+                    let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                    contract.methods.publicPurchase(quantity[i].innerText, i).send({
+                        from: accounts[0],
+                        to: process.env.CONTRACT_ADDRESS,
+                        value: String(totalCost),
+                    }).then(mint => {
+                        toolTipWrapper[i].classList.add('is-hidden')
                         loadingWrapper[i].classList.add('is-hidden')
-                        toolTipWrapper[i].classList.remove('is-hidden')
-                        toolTipText[i].classList.remove('is-active')
-                        toolTipText[i].classList.add('is-hidden')
+                        openseaLink[i].classList.remove('is-hidden')
+                    }).catch(error => {
+                        prepareError(i)
+                        setError('Houve um erro inesperado!')
                     })
-                })
+
+                } else {
+                    window.ethereum.request({
+                        method: 'eth_accounts',
+                    }).then(accounts => {
+                        contract.methods.purchaseTxsEarly(accounts[0]).call().then(amount => {
+                            contract.methods.maxTxEarly().call().then(maxAmount => {
+                                if (Number(amount) + quantity[i].innerText > Number(maxAmount)) {
+                                    prepareError(i)
+                                    setError('Ei, o máximo de mints é dez')
+                                    return;
+                                } else {
+
+                                    verifyWallet(accounts[0], process.env.PROJECT_ID, i).then(response => {
+                                        if (response) {
+                                            const { v, r, s } = response.data
+
+                                            let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                                            contract.methods.earlyPurchase(quantity[i].innerText, i, v, r, s).send({
+                                                from: accounts[0],
+                                                to: process.env.CONTRACT_ADDRESS,
+                                                value: String(totalCost),
+                                            }).then(mint => {
+                                                loadingWrapper[i].classList.add('is-hidden')
+                                                openseaLink[i].classList.remove('is-hidden')
+                                            }).catch(error => {
+                                                prepareError(i)
+                                                setError('Houve um erro inesperado!')
+                                            })
+                                        }
+                                    }).catch(error => {
+                                        prepareError(i)
+                                        setError('Ei, você não tá na Pre-sale')
+                                    })
+                                }
+                            })
+                        })
+                    })
+                }
+            } else {
+                prepareError(i)
+                setError('Ei, seu saldo tá zerado!')
             }
         } else {
             toolTipWrapper[i].classList.remove('is-hidden')
@@ -166,14 +185,10 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
         }
     }).catch(error => {
         setError('Houve um erro inesperado!')
-        console.log('aqui')
         toolTipWrapper[i].classList.remove('is-hidden')
         loadingWrapper[i].classList.add('is-hidden')
-        mintButtons[i].classList.remove('is-hidden')
         toolTipText[i].classList.add('is-active')
     })
-
-
 })
 
 connectButton.addEventListener('click', connectWallet);

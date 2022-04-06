@@ -118,10 +118,10 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
     }).then(accounts => {
         if (accounts.length > 0) {
             hasBalance(accounts[0]).then(balance => {
-                if (Number(balance) > 0) {
-                    if (!process.env.IS_PRE_SALE) {
-                        W
-                        let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                if (!process.env.IS_PRE_SALE) {
+                    let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+
+                    if (Number(balance) > totalCost) {
                         contract.methods.publicPurchase(quantity[i].innerText, i).send({
                             from: accounts[0],
                             to: process.env.CONTRACT_ADDRESS,
@@ -134,24 +134,29 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
                             prepareError(i)
                             setError('Houve um erro inesperado!')
                         })
-
                     } else {
-                        window.ethereum.request({
-                            method: 'eth_accounts',
-                        }).then(accounts => {
-                            contract.methods.purchaseTxsEarly(accounts[0]).call().then(amount => {
-                                contract.methods.maxTxEarly().call().then(maxAmount => {
-                                    if (Number(amount) + quantity[i].innerText > Number(maxAmount)) {
-                                        prepareError(i)
-                                        setError('Ei, o máximo de mints é dez')
-                                        return;
-                                    } else {
+                        prepareError(i)
+                        setError('Ei, seu saldo é insuficiente')
+                    }
 
-                                        verifyWallet(accounts[0], process.env.PROJECT_ID, i).then(response => {
-                                            if (response) {
-                                                const { v, r, s } = response.data
 
-                                                let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                } else {
+                    window.ethereum.request({
+                        method: 'eth_accounts',
+                    }).then(accounts => {
+                        contract.methods.purchaseTxsEarly(accounts[0]).call().then(amount => {
+                            contract.methods.maxTxEarly().call().then(maxAmount => {
+                                if (Number(amount) + quantity[i].innerText > Number(maxAmount)) {
+                                    prepareError(i)
+                                    setError('Ei, o máximo de mints é dez')
+                                } else {
+
+                                    verifyWallet(accounts[0], process.env.PROJECT_ID, i).then(response => {
+                                        if (response) {
+                                            const { v, r, s } = response.data
+
+                                            let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                                            if (Number(balance) > totalCost) {
                                                 contract.methods.earlyPurchase(quantity[i].innerText, i, v, r, s).send({
                                                     from: accounts[0],
                                                     to: process.env.CONTRACT_ADDRESS,
@@ -163,20 +168,22 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
                                                     prepareError(i)
                                                     setError('Houve um erro inesperado!')
                                                 })
+                                            } else {
+                                                prepareError(i)
+                                                setError('Ei, seu saldo é insuficiente')
                                             }
-                                        }).catch(error => {
-                                            prepareError(i)
-                                            setError('Ei, você não tá na Pre-sale')
-                                        })
-                                    }
-                                })
+
+                                        }
+                                    }).catch(error => {
+                                        prepareError(i)
+                                        setError('Ei, você não tá na Pre-sale')
+                                    })
+                                }
                             })
                         })
-                    }
-                } else {
-                    prepareError(i)
-                    setError('Ei, seu saldo é insuficiente!')
+                    })
                 }
+
             })
 
         } else {

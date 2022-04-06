@@ -149,7 +149,7 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
                             })
                         }
                     }).catch(error => {
-                        setError('Verificamos que você não tá na Pre-sale!')
+                        setError('Ei, você não tá na Pre-sale')
                         mintButtons[i].classList.remove('is-hidden')
                         loadingWrapper[i].classList.add('is-hidden')
                         toolTipWrapper[i].classList.remove('is-hidden')

@@ -117,66 +117,68 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
         method: 'eth_accounts',
     }).then(accounts => {
         if (accounts.length > 0) {
-            const balance = hasBalance(accounts[0])
-            if (Number(balance) > 0) {
-                if (!process.env.IS_PRE_SALE) {
+            hasBalance(accounts[0]).then(balance => {
+                if (Number(balance) > 0) {
+                    if (!process.env.IS_PRE_SALE) {
+                        W
+                        let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                        contract.methods.publicPurchase(quantity[i].innerText, i).send({
+                            from: accounts[0],
+                            to: process.env.CONTRACT_ADDRESS,
+                            value: String(totalCost),
+                        }).then(mint => {
+                            toolTipWrapper[i].classList.add('is-hidden')
+                            loadingWrapper[i].classList.add('is-hidden')
+                            openseaLink[i].classList.remove('is-hidden')
+                        }).catch(error => {
+                            prepareError(i)
+                            setError('Houve um erro inesperado!')
+                        })
 
-                    let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
-                    contract.methods.publicPurchase(quantity[i].innerText, i).send({
-                        from: accounts[0],
-                        to: process.env.CONTRACT_ADDRESS,
-                        value: String(totalCost),
-                    }).then(mint => {
-                        toolTipWrapper[i].classList.add('is-hidden')
-                        loadingWrapper[i].classList.add('is-hidden')
-                        openseaLink[i].classList.remove('is-hidden')
-                    }).catch(error => {
-                        prepareError(i)
-                        setError('Houve um erro inesperado!')
-                    })
-
-                } else {
-                    window.ethereum.request({
-                        method: 'eth_accounts',
-                    }).then(accounts => {
-                        contract.methods.purchaseTxsEarly(accounts[0]).call().then(amount => {
-                            contract.methods.maxTxEarly().call().then(maxAmount => {
-                                if (Number(amount) + quantity[i].innerText > Number(maxAmount)) {
-                                    prepareError(i)
-                                    setError('Ei, o máximo de mints é dez')
-                                    return;
-                                } else {
-
-                                    verifyWallet(accounts[0], process.env.PROJECT_ID, i).then(response => {
-                                        if (response) {
-                                            const { v, r, s } = response.data
-
-                                            let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
-                                            contract.methods.earlyPurchase(quantity[i].innerText, i, v, r, s).send({
-                                                from: accounts[0],
-                                                to: process.env.CONTRACT_ADDRESS,
-                                                value: String(totalCost),
-                                            }).then(mint => {
-                                                loadingWrapper[i].classList.add('is-hidden')
-                                                openseaLink[i].classList.remove('is-hidden')
-                                            }).catch(error => {
-                                                prepareError(i)
-                                                setError('Houve um erro inesperado!')
-                                            })
-                                        }
-                                    }).catch(error => {
+                    } else {
+                        window.ethereum.request({
+                            method: 'eth_accounts',
+                        }).then(accounts => {
+                            contract.methods.purchaseTxsEarly(accounts[0]).call().then(amount => {
+                                contract.methods.maxTxEarly().call().then(maxAmount => {
+                                    if (Number(amount) + quantity[i].innerText > Number(maxAmount)) {
                                         prepareError(i)
-                                        setError('Ei, você não tá na Pre-sale')
-                                    })
-                                }
+                                        setError('Ei, o máximo de mints é dez')
+                                        return;
+                                    } else {
+
+                                        verifyWallet(accounts[0], process.env.PROJECT_ID, i).then(response => {
+                                            if (response) {
+                                                const { v, r, s } = response.data
+
+                                                let totalCost = Number(process.env.COST) * parseInt(quantity[i].innerText)
+                                                contract.methods.earlyPurchase(quantity[i].innerText, i, v, r, s).send({
+                                                    from: accounts[0],
+                                                    to: process.env.CONTRACT_ADDRESS,
+                                                    value: String(totalCost),
+                                                }).then(mint => {
+                                                    loadingWrapper[i].classList.add('is-hidden')
+                                                    openseaLink[i].classList.remove('is-hidden')
+                                                }).catch(error => {
+                                                    prepareError(i)
+                                                    setError('Houve um erro inesperado!')
+                                                })
+                                            }
+                                        }).catch(error => {
+                                            prepareError(i)
+                                            setError('Ei, você não tá na Pre-sale')
+                                        })
+                                    }
+                                })
                             })
                         })
-                    })
+                    }
+                } else {
+                    prepareError(i)
+                    setError('Ei, seu saldo é insuficiente!')
                 }
-            } else {
-                prepareError(i)
-                setError('Ei, seu saldo tá zerado!')
-            }
+            })
+
         } else {
             toolTipWrapper[i].classList.remove('is-hidden')
             loadingWrapper[i].classList.add('is-hidden')

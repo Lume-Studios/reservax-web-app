@@ -146,7 +146,7 @@ mintButtons.forEach((button, i) => button.onclick = async (e) => {
                     }).then(accounts => {
                         contract.methods.purchaseTxsEarly(accounts[0]).call().then(amount => {
                             contract.methods.maxTxEarly().call().then(maxAmount => {
-                                if (Number(amount) + quantity[i].innerText > Number(maxAmount)) {
+                                if (Number(amount) + Number(quantity[i].innerText) > Number(maxAmount)) {
                                     prepareError(i)
                                     setError('Ei, o máximo de mints é dez')
                                 } else {

@@ -67,9 +67,9 @@ const connectWallet = async function () {
                 contract.methods.totalSupply(i).call().then((total) => {
                     supplyTotal[i].innerText = total;
                     minusButtons[i].classList.remove('is-disabled')
-                    if (+supplyTotal[i].innerText < process.env.MAX_SUPPLY) {
-                        sumButtons[i].classList.remove('is-disabled')
-                        mintButtons[i].classList.remove('is-disabled')
+                    if (Number(supplyTotal[i].innerText) === Number(process.env.MAX_SUPPLY)) {
+                        toolTipWrapper[i].classList.add('is-hidden')
+                        openseaLink[i].classList.remove('is-hidden')
                     }
                 })
             })

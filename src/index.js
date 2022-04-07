@@ -68,6 +68,7 @@ const connectWallet = async function () {
                     supplyTotal[i].innerText = total;
                     minusButtons[i].classList.remove('is-disabled')
                     if (Number(supplyTotal[i].innerText) === Number(process.env.MAX_SUPPLY)) {
+                        openseaLink[i].innerText = 'Sold out'
                         toolTipWrapper[i].classList.add('is-hidden')
                         openseaLink[i].classList.remove('is-hidden')
                     }

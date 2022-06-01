@@ -1,4 +1,4 @@
-# Reserva - desenvolvimento em Webflow
+# Reserva - Desenvolvimento em Webflow
 
 Projeto destinado ao mint da ReservaX, aqui será utilizado basicamente javascript.
 
